@@ -36,6 +36,7 @@
 
 #include "core/config/project_settings.h"
 #include "core/io/marshalls.h"
+#include "core/math/geometry_2d.h"
 #include "core/io/xml_parser.h"
 #include "core/version.h"
 #include "drivers/png/png_driver_common.h"
@@ -1929,7 +1930,9 @@ void DisplayServerWindows::window_set_mouse_passthrough(const Vector<Vector2> &p
 
 	ERR_FAIL_COND(!windows.has(p_window));
 	windows[p_window].mpath = p_region;
+	#if 0 // MizunagiKB
 	_update_window_mouse_passthrough(p_window);
+	#endif
 }
 
 void DisplayServerWindows::_update_window_mouse_passthrough(WindowID p_window) {
@@ -4536,7 +4539,25 @@ LRESULT DisplayServerWindows::WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARA
 			}
 		} break;
 		case WM_NCHITTEST: {
+			#if 0 // MizunagiKB
 			if (windows[window_id].mpass) {
+				return HTTRANSPARENT;
+			}
+			#endif
+			if (windows[window_id].mpass) {
+				return HTTRANSPARENT;
+			} else if (windows[window_id].mpath.size() > 0) {
+				POINT mouse_pos;
+				mouse_pos.x = LOWORD(lParam);
+				mouse_pos.y = HIWORD(lParam);
+
+				ScreenToClient(hWnd, &mouse_pos);
+
+				Vector2 point(static_cast<real_t>(mouse_pos.x), static_cast<real_t>(mouse_pos.y));
+
+				if (Geometry2D::is_point_in_polygon(point, windows[window_id].mpath) == true) {
+					return HTCLIENT;
+				}
 				return HTTRANSPARENT;
 			}
 		} break;
